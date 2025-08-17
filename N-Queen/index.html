@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Queens Solver</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #f0f4f8;
+            --text-color: #334e68;
+            --primary-color: #4a90e2;
+            --primary-hover: #357bd9;
+            --secondary-color: #f7b92a;
+            --board-light: #e0e6ed;
+            --board-dark: #cbd5e1;
+            --queen-color: #d63384;
+            --message-success: #28a745;
+            --attacked-color: #ffcccc;
+            --safe-color: #ccffcc;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .controls label {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .controls input {
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 2px solid var(--board-dark);
+            border-radius: 0.75rem;
+            width: 80px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        
+        .controls input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .controls button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        #new-game-btn {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.4);
+        }
+
+        #new-game-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        #new-game-btn:active {
+            transform: translateY(0);
+        }
+
+        #reset-btn {
+            background-color: var(--board-dark);
+            color: var(--text-color);
+        }
+
+        #reset-btn:hover {
+            background-color: #c4d0dc;
+            transform: translateY(-2px);
+        }
+
+        #reset-btn:active {
+            transform: translateY(0);
+        }
+
+        #board-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 4px solid var(--board-dark);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #chessboard {
+            display: grid;
+            border-collapse: collapse;
+            width: 100%;
+            height: 100%;
+            transition: all 0.5s ease-in-out;
+        }
+
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .queen {
+            color: var(--queen-color);
+            text-shadow: 0 0 10px rgba(214, 51, 132, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(0.95); }
+        }
+
+        .square.light {
+            background-color: var(--board-light);
+        }
+        .square.dark {
+            background-color: var(--board-dark);
+        }
+        .square.attacked {
+            background-color: var(--attacked-color) !important;
+        }
+        .square.safe {
+            background-color: var(--safe-color);
+        }
+        .square.solution {
+            background-color: var(--message-success);
+        }
+
+        #message {
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            height: 30px;
+        }
+
+        #message.error {
+            color: #dc3545;
+        }
+
+        #message.success {
+            color: var(--message-success);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>The N-Queens Game</h1>
+    <div class="controls">
+        <label for="n-input">Enter N (4-8):</label>
+        <input type="number" id="n-input" value="4" min="4" max="8">
+        <button id="new-game-btn">New Game</button>
+        <button id="reset-btn">Reset</button>
+    </div>
+    <div id="board-container">
+        <div id="chessboard"></div>
+    </div>
+    <div id="message"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const nInput = document.getElementById('n-input');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const boardContainer = document.getElementById('board-container');
+        const chessboard = document.getElementById('chessboard');
+        const message = document.getElementById('message');
+
+        let boardSize = parseInt(nInput.value);
+        let boardState = [];
+
+        function drawBoard(n) {
+            chessboard.innerHTML = '';
+            chessboard.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+            chessboard.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+            
+            boardState = Array(n).fill(0).map(() => Array(n).fill(0));
+
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((i + j) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = i;
+                    square.dataset.col = j;
+                    square.addEventListener('click', handleSquareClick);
+                    chessboard.appendChild(square);
+                }
+            }
+            
+            const size = Math.min(window.innerWidth * 0.7, window.innerHeight * 0.7);
+            boardContainer.style.width = `${size}px`;
+            boardContainer.style.height = `${size}px`;
+
+            message.textContent = `Place ${n} queens on the board!`;
+            message.classList.remove('success', 'error');
+        }
+        
+        window.addEventListener('resize', () => drawBoard(boardSize));
+
+        function isUnderAttack(row, col) {
+            for (let i = 0; i < boardSize; i++) {
+                if ((i !== col && boardState[row][i] === 1) || (i !== row && boardState[i][col] === 1)) {
+                    return true;
+                }
+            }
+            
+            let i = row - 1;
+            let j = col - 1;
+            while (i >= 0 && j >= 0) {
+                if (boardState[i][j] === 1) return true;
+                i--;
+                j--;
+            }
+
+            i = row + 1;
+            j = col + 1;
+            while (i < boardSize && j < boardSize) {
+                if (boardState[i][j] === 1) return true;
+                i++;
+                j++;
+            }
+
+            i = row - 1;
+            j = col + 1;
+            while (i >= 0 && j < boardSize) {
+                if (boardState[i][j] === 1) return true;
+                i--;
+                j++;
+            }
+
+            i = row + 1;
+            j = col - 1;
+            while (i < boardSize && j >= 0) {
+                if (boardState[i][j] === 1) return true;
+                i++;
+                j--;
+            }
+
+            return false;
+        }
+
+        function updateBoardVisuals() {
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(square => {
+                const row = parseInt(square.dataset.row);
+                const col = parseInt(square.dataset.col);
+
+                square.classList.remove('attacked');
+                if ((row + col) % 2 === 0) {
+                    square.style.backgroundColor = 'var(--board-light)';
+                } else {
+                    square.style.backgroundColor = 'var(--board-dark)';
+                }
+
+                if (boardState[row][col] === 0 && isUnderAttack(row, col)) {
+                    square.classList.add('attacked');
+                }
+            });
+        }
+        
+        function handleSquareClick(event) {
+            const square = event.currentTarget;
+            const row = parseInt(square.dataset.row);
+            const col = parseInt(square.dataset.col);
+
+            const isQueen = square.querySelector('.queen');
+
+            if (isQueen) {
+                square.innerHTML = '';
+                boardState[row][col] = 0;
+            } else {
+                square.innerHTML = '<span class="queen">&#9813;</span>';
+                boardState[row][col] = 1;
+            }
+
+            updateBoardVisuals();
+            checkWinCondition();
+        }
+
+        function checkWinCondition() {
+            let queenCount = 0;
+            let allQueensSafe = true;
+
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (boardState[i][j] === 1) {
+                        queenCount++;
+                        if (isUnderAttack(i, j)) {
+                            allQueensSafe = false;
+                            break; 
+                        }
+                    }
+                }
+                if (!allQueensSafe) break;
+            }
+            
+            if (queenCount === boardSize && allQueensSafe) {
+                message.textContent = `You did it! You solved the ${boardSize}-Queens puzzle! 🎉`;
+                message.classList.remove('error');
+                message.classList.add('success');
+                chessboard.querySelectorAll('.square').forEach(sq => sq.removeEventListener('click', handleSquareClick));
+            } else {
+                message.textContent = `Place ${boardSize - queenCount} more queens.`;
+                message.classList.remove('success', 'error');
+            }
+        }
+
+        newGameBtn.addEventListener('click', () => {
+            const n = parseInt(nInput.value);
+            if (n < 4 || n > 8 || isNaN(n)) {
+                message.textContent = "Please enter a number between 4 and 8.";
+                message.classList.remove('success');
+                message.classList.add('error');
+                return;
+            }
+            boardSize = n;
+            drawBoard(boardSize);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            drawBoard(boardSize);
+        });
+        
+        drawBoard(boardSize);
+    });
+</script>
+
+</body>
+</html>
